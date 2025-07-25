@@ -3,9 +3,15 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    include: ['react-select']
+  },
   build: {
+    commonjsOptions: {
+      include: [/react-select/, /node_modules/]
+    },
     rollupOptions: {
-      external: ['react-select'], // <-- Ajoute ici tous les modules problématiques
+      external: [],
     }
   }
 })
