@@ -1,4 +1,23 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
+
+// Spinner Apple-style
+const Spinner = () => (
+  <div style={{
+    display: 'flex', justifyContent: 'center', alignItems: 'center', height: 52,
+    paddingTop: 18, paddingBottom: 18,
+  }}>
+    <div style={{
+      width: 34, height: 34, border: '4px solid #e0e7ef', borderTop: '4px solid #1674ea',
+      borderRadius: '50%', animation: 'spin 1s linear infinite'
+    }} />
+    <style>{`
+      @keyframes spin {
+        0% { transform: rotate(0deg);}
+        100% { transform: rotate(360deg);}
+      }
+    `}</style>
+  </div>
+);
 
 const AIRTABLE_BASE_ID = 'appCatoxz4qIqiY6F';
 const AIRTABLE_TABLE_NAME = 'Exercices';
@@ -6,6 +25,7 @@ const AIRTABLE_TOKEN = 'pat1UfGk7GFtte5eK.5813713a385f0da49ddb462c197767bb25f980
 
 const DIFFICULTY_ORDER = { 'débutant': 1, 'intermédiaire': 2, 'avancé': 3 };
 
+// Matching tolérant & nom d’exo exhaustif
 const normalize = (str) =>
   str == null
     ? ''
@@ -21,21 +41,15 @@ const parseTags = (val) => !val
   : Array.isArray(val)
     ? val.filter(Boolean).map(normalize)
     : typeof val === 'string'
-      ? val.split(/[,;]/).map((tag) => normalize(tag.trim())).filter(Boolean)
+      ? val.split(/[,;/|]/).map((tag) => normalize(tag.trim())).filter(Boolean)
       : [normalize(val)].filter(Boolean);
 
-const parseSportField = (sportValue) => !sportValue
-  ? []
-  : Array.isArray(sportValue)
-    ? sportValue.filter(Boolean).map(normalize)
-    : typeof sportValue === 'string' && sportValue.trim() !== ''
-      ? sportValue.split(/[,;|]/).map(normalize).filter(Boolean)
-      : [];
+const parseSportField = (sportValue) => parseTags(sportValue);
 
 const getExerciseTitle = (exercise) => {
   // Champs standards
   const candidates = [
-    "Nom de l'exercice", "Nom", "name", "titre", "Titre", "Exercise", "Exercice", "Name"
+    "Nom de l'exercice", "Nom", "name", "titre", "Titre", "Exercise", "Exercice", "Name", "title"
   ];
   for (const field of candidates) {
     const value = exercise[field];
@@ -61,7 +75,6 @@ const getExerciseTitle = (exercise) => {
   }
   return 'Exercice sans nom';
 };
-
 
 const calculateRelevanceScore = (exercise, filters) => {
   let score = 0, maxScore = 0;
@@ -129,75 +142,93 @@ const filterSections = [
   { name: 'materiel', label: '🛠️ Matériel', options: ['Aucun', 'Tapis de sol', 'Step', 'Box pliométrique', 'Plots + Échelle', 'Ballon', 'Machines de renforcement', 'Medicine Ball', 'Bâton', 'Rouleau de massage', 'Élastiques', "Sangle d'étirement", 'Banc de musculation', 'Swiss Ball', 'Haltères', 'BOSU', 'Balance Board', 'Bain froid', "Appareil d'électrostimulation"], multi: true }
 ];
 
+// BUTTONS & BADGES
 const FilterButton = ({ option, isSelected, onClick, disabled = false }) => (
   <button
     onClick={onClick}
     disabled={disabled}
     style={{
-      padding: '9px 18px', margin: '4px 6px 4px 0',
-      borderRadius: '22px', border: '1.5px solid',
-      borderColor: isSelected ? '#1674ea' : '#e0e0e0',
-      background: isSelected ? 'linear-gradient(90deg, #1674ea 0%, #0046ad 100%)' : '#fff',
-      color: isSelected ? '#fff' : '#333',
-      fontWeight: 500, fontSize: '15px',
-      transition: 'all 0.18s cubic-bezier(.4,0,.2,1)',
-      boxShadow: isSelected ? '0 1px 5px #1674ea22' : 'none',
+      padding: '10px 20px', margin: '5px 8px 5px 0',
+      borderRadius: '2rem', border: '1.7px solid',
+      borderColor: isSelected ? '#1674ea' : '#e2e7ef',
+      background: isSelected ? 'linear-gradient(90deg, #1674ea 0%, #1d7fff 100%)' : '#f6f8fa',
+      color: isSelected ? '#fff' : '#234',
+      fontWeight: 500, fontSize: '16px',
+      transition: 'all .22s cubic-bezier(.5,0,.2,1)',
+      boxShadow: isSelected ? '0 2px 16px #1674ea22' : '0 0px 0px #0000',
       outline: isSelected ? 'none' : undefined,
       cursor: disabled ? 'not-allowed' : 'pointer',
-      opacity: disabled ? 0.6 : 1
+      opacity: disabled ? 0.7 : 1,
+      filter: isSelected ? 'brightness(1.09)' : 'none',
+      letterSpacing: '.02em'
     }}
   >
     {option}
   </button>
 );
 
+const badgeStyle = (score) => {
+  if (score >= 80) return { background: '#eafff3', color: '#119b4c', border: '1.5px solid #c5f5de' };
+  if (score >= 60) return { background: '#fff7e0', color: '#ba910b', border: '1.5px solid #ffe7a1' };
+  return { background: '#ffeaea', color: '#d2372d', border: '1.5px solid #ffc0c0' };
+};
+
 const ExerciseCard = ({ exercise }) => (
   <div style={{
-    border: '1px solid #eaeaea',
-    borderRadius: '17px',
+    border: '1.3px solid #e8eaf5',
+    borderRadius: '24px',
     background: '#fff',
-    margin: '10px 0',
-    padding: '20px 22px',
-    boxShadow: '0 2px 10px #eaeaea55',
+    margin: '14px 0',
+    padding: '24px 25px 18px 25px',
+    boxShadow: '0 6px 28px #e2eaff45',
     display: 'flex',
     flexDirection: 'column',
-    gap: '7px'
-  }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-      <h4 style={{ margin: 0, fontWeight: 700, fontSize: 19, flex: 1, color: '#1a2233' }}>
+    gap: '10px',
+    transition: 'box-shadow .23s cubic-bezier(.3,0,.2,1), transform .18s cubic-bezier(.4,0,.2,1)',
+    cursor: 'pointer',
+    willChange: 'box-shadow, transform',
+    position: 'relative'
+  }}
+    tabIndex={0}
+    onMouseOver={e => { e.currentTarget.style.boxShadow = '0 12px 38px #1674ea22'; e.currentTarget.style.transform = 'translateY(-3px) scale(1.015)'; }}
+    onMouseOut={e => { e.currentTarget.style.boxShadow = '0 6px 28px #e2eaff45'; e.currentTarget.style.transform = 'none'; }}
+  >
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+      <h4 style={{ margin: 0, fontWeight: 800, fontSize: 21, flex: 1, color: '#15326c', lineHeight: 1.16 }}>
         {getExerciseTitle(exercise)}
       </h4>
       {typeof exercise.score === 'number' && (
         <span style={{
-          background: exercise.score >= 80 ? '#dcfbe4' : exercise.score >= 60 ? '#fff7d1' : '#ffe2e2',
-          color: exercise.score >= 80 ? '#088451' : exercise.score >= 60 ? '#b49b1b' : '#c2352b',
-          fontWeight: 700,
-          fontSize: 13,
-          borderRadius: 12,
-          padding: '4px 13px',
-          minWidth: 45,
-          textAlign: 'center'
+          ...badgeStyle(exercise.score),
+          fontWeight: 800,
+          fontSize: 15,
+          borderRadius: 14,
+          padding: '6px 19px',
+          minWidth: 54,
+          textAlign: 'center',
+          letterSpacing: '.02em',
+          marginLeft: 10,
         }}>
           {exercise.score}%
         </span>
       )}
     </div>
     {exercise.Variant && (
-      <div style={{ fontStyle: 'italic', color: '#7a7a7a', fontSize: 14, marginBottom: 2 }}>{exercise.Variant}</div>
+      <div style={{ fontStyle: 'italic', color: '#8694a8', fontSize: 15, marginBottom: 2 }}>{exercise.Variant}</div>
     )}
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px 7px', margin: '6px 0' }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '9px 9px', margin: '7px 0 2px 0' }}>
       {[...(Array.isArray(exercise.Type) ? exercise.Type : [exercise.Type])]
         .filter(Boolean)
         .map((type, i) => (
           <span key={i} style={{
             background: '#e8f0ff', color: '#2356b5',
-            borderRadius: 10, fontSize: 13, padding: '2px 8px'
+            borderRadius: 11, fontSize: 14, padding: '3px 12px', fontWeight: 600
           }}>{type}</span>
         ))}
       {exercise.Niveau && (
         <span style={{
           background: '#ede9ff', color: '#6c40ad',
-          borderRadius: 10, fontSize: 13, padding: '2px 8px'
+          borderRadius: 11, fontSize: 14, padding: '3px 12px', fontWeight: 600
         }}>{exercise.Niveau}</span>
       )}
       {(Array.isArray(exercise.Sport) ? exercise.Sport : [])
@@ -205,14 +236,14 @@ const ExerciseCard = ({ exercise }) => (
         .map((sport, i) => (
           <span key={i} style={{
             background: '#fff4e1', color: '#b97126',
-            borderRadius: 10, fontSize: 13, padding: '2px 8px'
+            borderRadius: 11, fontSize: 14, padding: '3px 12px', fontWeight: 600
           }}>{sport}</span>
         ))}
     </div>
     {exercise.Description && (
       <div style={{
-        color: '#5a6572', fontSize: 15, margin: '5px 0 0 0',
-        lineHeight: 1.45, maxHeight: 80, overflow: 'hidden', textOverflow: 'ellipsis'
+        color: '#546187', fontSize: 15.5, margin: '6px 0 0 0',
+        lineHeight: 1.5, maxHeight: 90, overflow: 'hidden', textOverflow: 'ellipsis'
       }}>{exercise.Description}</div>
     )}
     {exercise.Lien && (
@@ -221,12 +252,15 @@ const ExerciseCard = ({ exercise }) => (
         target="_blank"
         rel="noopener noreferrer"
         style={{
-          display: 'inline-block', marginTop: 8,
+          display: 'inline-block', marginTop: 11,
           background: 'linear-gradient(90deg,#1674ea 0%,#0046ad 100%)',
-          color: '#fff', borderRadius: 9, padding: '8px 20px',
-          textDecoration: 'none', fontWeight: 500,
-          boxShadow: '0 1px 5px #1674ea33', fontSize: 14
+          color: '#fff', borderRadius: 13, padding: '9px 24px',
+          textDecoration: 'none', fontWeight: 700,
+          boxShadow: '0 2px 10px #1674ea23', fontSize: 15,
+          transition: 'filter .17s cubic-bezier(.3,0,.2,1)',
         }}
+        onMouseOver={e => e.currentTarget.style.filter = 'brightness(1.13)'}
+        onMouseOut={e => e.currentTarget.style.filter = ''}
       >
         Voir la vidéo
       </a>
@@ -234,6 +268,7 @@ const ExerciseCard = ({ exercise }) => (
   </div>
 );
 
+// PRINCIPAL COMPONENT
 function ModularGenerator() {
   const [form, setForm] = useState(filterSections.reduce((a, s) => ({ ...a, [s.name]: s.multi ? [] : '' }), {}));
   const [exercises, setExercises] = useState(null);
@@ -298,125 +333,129 @@ function ModularGenerator() {
     setLimit(20);
   };
 
-return (
-  <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#e8f0fe 0%,#fff 100%)', padding: 0 }}>
-    <div style={{ maxWidth: 1000, margin: '0 auto', padding: '24px 8px 48px 8px' }}>
-      <div style={{ textAlign: 'center', marginBottom: 35, marginTop: 10 }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
-          <img
-            src="/logo-kinexperience.png"
-            alt="Logo KineXperience"
-            style={{ width: 92, height: 92, objectFit: 'contain', borderRadius: 18, boxShadow: '0 4px 20px #17408014' }}
-            draggable={false}
-          />
-        </div>
-        <h1 style={{ fontWeight: 800, fontSize: 32, margin: 0, color: '#174080', letterSpacing: '.02em' }}>
-          🏋️ Générateur de Programme KineXpérience
-        </h1>
-        <div style={{ color: '#505d6c', fontSize: 18, marginTop: 10 }}>
-          Génère ton programme d'exercices sur-mesure.
-        </div>
-      </div>
-
-
-      <div style={{
-        background: '#fff',
-        borderRadius: 28,
-        boxShadow: '0 6px 40px #1674ea1a',
-        padding: '35px 22px 25px 22px',
-        marginBottom: 38,
-      }}>
-        {filterSections.map(section => (
-          <div key={section.name} style={{ marginBottom: 15 }}>
-            <div style={{
-              fontWeight: 700,
-              color: '#144178',
-              fontSize: 16,
-              marginBottom: 6
-            }}>
-              {section.label}
-            </div>
-            <div style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 0
-            }}>
-              {section.options.map(option => (
-                <FilterButton
-                  key={option}
-                  option={option}
-                  isSelected={section.multi
-                    ? form[section.name]?.includes(option)
-                    : form[section.name] === option}
-                  onClick={() => toggleSelection(section.name, option, section.multi)}
-                  disabled={loading}
-                />
-              ))}
-            </div>
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(130deg,#e8f0fe 0%,#fafdff 60%,#fff 100%)', padding: 0, fontFamily: 'Inter,Segoe UI,Arial,sans-serif' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '28px 8px 58px 8px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 38, marginTop: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+            <img
+              src="/logo-kinexperience.png"
+              alt="Logo KineXperience"
+              style={{ width: 92, height: 92, objectFit: 'contain', borderRadius: 20, boxShadow: '0 7px 24px #1674ea18' }}
+              draggable={false}
+            />
           </div>
-        ))}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 13, marginTop: 24, borderTop: '1px solid #eee', paddingTop: 24 }}>
-          <button
-            onClick={clearFilters}
-            disabled={loading}
-            style={{
-              padding: '12px 30px',
-              background: '#ececec',
-              color: '#304060',
-              fontWeight: 600,
-              border: 'none',
-              borderRadius: 15,
-              fontSize: 17,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.18s cubic-bezier(.4,0,.2,1)'
-            }}>
-            Effacer les filtres
-          </button>
-          <button
-            onClick={generateProgram}
-            disabled={loading}
-            style={{
-              padding: '12px 34px',
-              background: 'linear-gradient(90deg,#1674ea 0%,#0046ad 100%)',
-              color: '#fff',
-              fontWeight: 700,
-              border: 'none',
-              borderRadius: 15,
-              fontSize: 17,
-              boxShadow: '0 2px 14px #1674ea33',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              letterSpacing: '.03em',
-              transition: 'all 0.18s cubic-bezier(.4,0,.2,1)'
-            }}>
-            {loading ? "Génération..." : "Générer le programme"}
-          </button>
+          <h1 style={{
+            fontWeight: 900, fontSize: 35, margin: 0, color: '#174080', letterSpacing: '.01em', textShadow: '0 1.5px 0 #fff'
+          }}>
+            🏋️ Générateur de Programme KineXpérience
+          </h1>
+          <div style={{ color: '#466091', fontSize: 18.5, marginTop: 10, fontWeight: 500 }}>
+            Génère ton programme d'exercices sur-mesure.
+          </div>
         </div>
-      </div>
 
+        <div style={{
+          background: '#fff',
+          borderRadius: 33,
+          boxShadow: '0 8px 44px #1674ea13',
+          padding: '37px 24px 32px 24px',
+          marginBottom: 46,
+          transition: 'box-shadow .18s cubic-bezier(.3,0,.2,1)',
+        }}>
+          {filterSections.map(section => (
+            <div key={section.name} style={{ marginBottom: 19 }}>
+              <div style={{
+                fontWeight: 800,
+                color: '#144178',
+                fontSize: 17,
+                marginBottom: 8,
+                letterSpacing: '.01em'
+              }}>
+                {section.label}
+              </div>
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 0
+              }}>
+                {section.options.map(option => (
+                  <FilterButton
+                    key={option}
+                    option={option}
+                    isSelected={section.multi
+                      ? form[section.name]?.includes(option)
+                      : form[section.name] === option}
+                    onClick={() => toggleSelection(section.name, option, section.multi)}
+                    disabled={loading}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 28, borderTop: '1px solid #eee', paddingTop: 26 }}>
+            <button
+              onClick={clearFilters}
+              disabled={loading}
+              style={{
+                padding: '13px 32px',
+                background: '#ececec',
+                color: '#304060',
+                fontWeight: 700,
+                border: 'none',
+                borderRadius: 17,
+                fontSize: 17,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.19s cubic-bezier(.4,0,.2,1)',
+                boxShadow: '0 1.5px 8px #00000007'
+              }}>
+              Effacer les filtres
+            </button>
+            <button
+              onClick={generateProgram}
+              disabled={loading}
+              style={{
+                padding: '13px 36px',
+                background: 'linear-gradient(90deg,#1674ea 0%,#0046ad 100%)',
+                color: '#fff',
+                fontWeight: 800,
+                border: 'none',
+                borderRadius: 17,
+                fontSize: 17.2,
+                boxShadow: '0 2.5px 18px #1674ea33',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                letterSpacing: '.03em',
+                transition: 'all 0.17s cubic-bezier(.4,0,.2,1)'
+              }}>
+              {loading ? <Spinner /> : "Générer le programme"}
+            </button>
+          </div>
+        </div>
 
         <div ref={resultsRef}></div>
         {error && (
-          <div style={{ background: '#ffe9e9', border: '1px solid #ffc0c0', color: '#b43232', borderRadius: 15, padding: 18, margin: '18px 0', textAlign: 'center' }}>
+          <div style={{ background: '#ffe9e9', border: '1.5px solid #ffc0c0', color: '#b43232', borderRadius: 18, padding: 22, margin: '24px 0', textAlign: 'center', fontWeight: 700, fontSize: 18 }}>
             ⚠️ {error}
           </div>
         )}
         {exercises !== null && exercises.length === 0 && !error && searched && (
-          <div style={{ background: '#fffbe6', border: '1px solid #ffe7a1', color: '#b49b1b', borderRadius: 15, padding: 18, margin: '18px 0', textAlign: 'center' }}>
+          <div style={{ background: '#fffbe6', border: '1.5px solid #ffe7a1', color: '#b49b1b', borderRadius: 18, padding: 22, margin: '24px 0', textAlign: 'center', fontWeight: 700, fontSize: 18 }}>
             Aucun exercice trouvé.<br />
             Modifie tes filtres pour obtenir plus de résultats.
           </div>
         )}
         {exercises && exercises.length > 0 && (
           <div>
-            <div style={{ textAlign: 'center', marginBottom: 14 }}>
+            <div style={{ textAlign: 'center', marginBottom: 18 }}>
               <span style={{
                 background: '#dcfbe4',
                 color: '#157349',
                 fontWeight: 700,
-                fontSize: 17,
-                borderRadius: 17,
-                padding: '9px 24px',
-                display: 'inline-block'
+                fontSize: 19,
+                borderRadius: 19,
+                padding: '11px 29px',
+                display: 'inline-block',
+                letterSpacing: '.01em'
               }}>
                 {exercises.slice(0, limit).length} exercice{exercises.slice(0, limit).length > 1 ? 's' : ''} trouvé{exercises.slice(0, limit).length > 1 ? 's' : ''}
               </span>
@@ -427,21 +466,25 @@ return (
               ))}
             </div>
             {limit < exercises.length && (
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 22 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 28 }}>
                 <button
                   onClick={() => setLimit(limit + 20)}
                   style={{
-                    padding: '13px 38px',
+                    padding: '15px 40px',
                     background: 'linear-gradient(90deg,#1674ea 0%,#0046ad 100%)',
                     color: '#fff',
-                    fontWeight: 700,
+                    fontWeight: 800,
                     border: 'none',
-                    borderRadius: 14,
-                    fontSize: 17,
-                    boxShadow: '0 2px 14px #1674ea22',
+                    borderRadius: 17,
+                    fontSize: 18,
+                    boxShadow: '0 2.5px 15px #1674ea22',
                     cursor: 'pointer',
-                    margin: 'auto'
-                  }}>
+                    margin: 'auto',
+                    transition: 'filter .14s cubic-bezier(.3,0,.2,1)'
+                  }}
+                  onMouseOver={e => e.currentTarget.style.filter = 'brightness(1.11)'}
+                  onMouseOut={e => e.currentTarget.style.filter = ''}
+                >
                   Voir plus
                 </button>
               </div>

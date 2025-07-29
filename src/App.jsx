@@ -1,20 +1,15 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Home from './pages/Home';
-import Generator from './pages/Generator';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import HomePage from './components/HomePage';
+import ModularGenerator from './components/ModularGenerator';
 
 function App() {
   return (
-    <Router>
-      <nav style={{ padding: '1rem', background: '#f0f0f0' }}>
-        <Link to="/" style={{ marginRight: '1rem' }}>Accueil</Link>
-        <Link to="/generator">Générateur</Link>
-      </nav>
-
+    <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/generator" element={<Generator />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/generator" element={<ModularGenerator />} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
 
